@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ShoppingBag, Store, ClipboardList, Search, Plus, Minus, Trash2, MessageCircle, Package, X } from 'lucide-react';
-import { supabase } from './src/supabase.js';
+import { supabase } from './supabase.js';
 const seedProducts = [
   { id: 'p1', name: 'طقم لؤلؤ أنيق', category: 'إكسسوارات', price: 38, vendor: 'متجر تجريبي', phone: '', stock: 8, image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80', description: 'إكسسوار أنيق للمناسبات.' },
   { id: 'p2', name: 'سيروم للعناية بالبشرة', category: 'عناية بالبشرة', price: 45, vendor: 'متجر تجريبي', phone: '', stock: 6, image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80', description: 'يرجى التحقق من المكونات والصلاحية قبل الشراء.' },
