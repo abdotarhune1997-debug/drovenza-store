@@ -35,7 +35,7 @@ export default function DrovenzaLuxuryAppV3() {
         console.error('Supabase products error:', error);
         return;
       }
-      if (active && data && data.length > 0) {
+      if (active && data ) {
         setProducts(data.map(p => ({
           id: p.id,
           name: p.name,
