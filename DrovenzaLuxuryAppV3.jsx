@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ShoppingBag, Store, ClipboardList, Search, Plus, Minus, Trash2, MessageCircle, Package, X } from 'lucide-react';
-
+import { supabase } from './src/supabase.js';
 const seedProducts = [
   { id: 'p1', name: 'طقم لؤلؤ أنيق', category: 'إكسسوارات', price: 38, vendor: 'متجر تجريبي', phone: '', stock: 8, image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80', description: 'إكسسوار أنيق للمناسبات.' },
   { id: 'p2', name: 'سيروم للعناية بالبشرة', category: 'عناية بالبشرة', price: 45, vendor: 'متجر تجريبي', phone: '', stock: 6, image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=800&q=80', description: 'يرجى التحقق من المكونات والصلاحية قبل الشراء.' },
@@ -25,6 +25,33 @@ export default function DrovenzaLuxuryAppV3() {
 
   useEffect(() => { localStorage.setItem('drovenza_products_v1', JSON.stringify(products)); }, [products]);
   useEffect(() => { localStorage.setItem('drovenza_orders_v1', JSON.stringify(orders)); }, [orders]);
+  useEffect(() => {
+    let active = true;
+    const loadProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, description, price, image_url, category');
+      if (error) {
+        console.error('Supabase products error:', error);
+        return;
+      }
+      if (active && data && data.length > 0) {
+        setProducts(data.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category || 'أخرى',
+          price: Number(p.price || 0),
+          vendor: 'متجر',
+          phone: '',
+          stock: 1,
+          image: p.image_url || '',
+          description: p.description || ''
+        })));
+      }
+    };
+    loadProducts();
+    return () => { active = false; };
+  }, []);
 
   const categories = ['الكل', ...new Set(products.map(p => p.category).filter(Boolean))];
   const visibleProducts = useMemo(() => products.filter(p => (category === 'الكل' || p.category === category) && `${p.name} ${p.vendor} ${p.category}`.toLowerCase().includes(search.toLowerCase())), [products, category, search]);
