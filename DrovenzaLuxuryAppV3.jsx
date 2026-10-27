@@ -45,7 +45,7 @@ useEffect(() => {
   useEffect(() => {
     let active = true;
 
-    const loadProducts = async () => {
+    const addProduct = async e => {
       const { data, error } = await supabase
         .from('products')
         .select('id, seller_id, name, description, price, image_url, category, stock');
@@ -226,7 +226,23 @@ seller_id: session.user.id,
         : products.filter(p => p.sellerId === session.user.id).map(p => (
           <article key={p.id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 12 }}>
             <h3>{p.name}</h3>
-            <p>السعر: {money(p.price)} · الكمية: {p.stock}</p>
+            
+<p>السعر: {money(p.price)} · الكمية: {p.stock}</p>
+<button onClick={() => {
+  setEditingProductId(p.id);
+  setNewProduct({
+    name: p.name || '',
+    category: p.category || 'إكسسوارات',
+    price: String(p.price || ''),
+    stock: String(p.stock || 0),
+    vendor: p.vendor || '',
+    phone: p.phone || '',
+    image: p.image || '',
+    description: p.description || ''
+  });
+  setTab('merchant');
+}}>تعديل المنتج</button>
+
           </article>
         ))
       }
