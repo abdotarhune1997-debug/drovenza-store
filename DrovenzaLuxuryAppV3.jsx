@@ -40,33 +40,69 @@ useEffect(() => {
   return () => listener.subscription.unsubscribe();
 }, []);
   useEffect(() => { localStorage.setItem('drovenza_orders_v1', JSON.stringify(orders)); }, [orders]);
+  
   useEffect(() => {
     let active = true;
+
     const loadProducts = async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, image_url, category, stock');
+        .select('id, seller_id, name, description, price, image_url, category, stock');
+
       if (error) {
         console.error('Supabase products error:', error);
         return;
       }
-      if (active && data ) {
-        setProducts(data.map(p => ({
+
+      if (!active || !data) return;
+
+      const sellerIds = [...new Set(
+        data.map(p => p.seller_id).filter(Boolean)
+      )];
+
+      let sellersById = {};
+
+      if (sellerIds.length > 0) {
+        const { data: sellersData, error: sellersError } = await supabase
+          .from('sellers')
+          .select('id, store_name, phone')
+          .in('id', sellerIds);
+
+        if (sellersError) {
+          console.error('Supabase sellers error:', sellersError);
+        } else {
+          (sellersData || []).forEach(seller => {
+            sellersById[seller.id] = seller;
+          });
+        }
+      }
+
+      if (!active) return;
+
+      setProducts(data.map(p => {
+        const seller = sellersById[p.seller_id];
+
+        return {
           id: p.id,
           name: p.name,
           category: p.category || 'أخرى',
           price: Number(p.price || 0),
-          vendor: 'متجر',
-          phone: '',
+          vendor: seller?.store_name || 'متجر',
+          phone: seller?.phone || '',
           stock: Number(p.stock || 0),
           image: p.image_url || '',
           description: p.description || ''
-        })));
-      }
+        };
+      }));
     };
+
     loadProducts();
-    return () => { active = false; };
+
+    return () => {
+      active = false;
+    };
   }, []);
+
 
   const categories = ['الكل', ...new Set(products.map(p => p.category).filter(Boolean))];
   const visibleProducts = useMemo(() => products.filter(p => (category === 'الكل' || p.category === category) && `${p.name} ${p.vendor} ${p.category}`.toLowerCase().includes(search.toLowerCase())), [products, category, search]);
