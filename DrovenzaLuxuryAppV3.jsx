@@ -21,7 +21,8 @@ export default function DrovenzaLuxuryAppV3() {
   const [notice, setNotice] = useState('');
   const [checkout, setCheckout] = useState({ name: '', phone: '', city: 'طرابلس', address: '', notes: '' });
   const [newProduct, setNewProduct] = useState({ name: '', category: 'إكسسوارات', price: '', stock: '1', vendor: '', phone: '', image: '', description: '' });
-  const [orderFilter, setOrderFilter] = useState('الكل');
+const [editingProductId, setEditingProductId] = useState(null);
+const [orderFilter, setOrderFilter] = useState('الكل');
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
