@@ -100,6 +100,7 @@ const addProduct = async e => {
   const { data: savedProduct, error } = await supabase
     .from('products')
     .insert([{
+seller_id: session.user.id,
       name: newProduct.name.trim(),
       category: newProduct.category,
       price: Number(newProduct.price),
