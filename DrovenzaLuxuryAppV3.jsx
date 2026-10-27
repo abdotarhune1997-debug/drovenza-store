@@ -156,6 +156,7 @@ seller_id: session.user.id,
 
   const p = {
     id: savedProduct.id,
+ sellerId: session.user.id,
     name: savedProduct.name,
     category: savedProduct.category || 'أخرى',
     price: Number(savedProduct.price),
