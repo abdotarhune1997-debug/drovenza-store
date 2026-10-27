@@ -61,8 +61,40 @@ export default function DrovenzaLuxuryAppV3() {
   const addProduct = async e => {
     e.preventDefault();
     if (!newProduct.name.trim() || !newProduct.vendor.trim() || Number(newProduct.price) <= 0) { setNotice('أدخل اسم المنتج واسم المتجر وسعرًا صحيحًا.'); return; }
-    const p = { ...newProduct, id: `p${Date.now()}`, price: Number(newProduct.price), stock: Math.max(0, Number(newProduct.stock) || 0), image: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' };
-    setProducts(old => [p, ...old]); setNewProduct({ name: '', category: 'إكسسوارات', price: '', stock: '1', vendor: '', phone: '', image: '', description: '' }); setNotice('تمت إضافة المنتج إلى هذه النسخة التجريبية.'); setTab('products');
+    const { data: savedProduct, error } = await supabase
+  .from('products')
+  .insert([{
+    name: newProduct.name.trim(),
+    category: newProduct.category,
+    price: Number(newProduct.price),
+    stock: Math.max(0, Number(newProduct.stock) || 0),
+    image_url: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+    description: newProduct.description.trim()
+  }])
+  .select('id, name, description, price, image_url, category, stock')
+  .single();
+
+if (error) {
+  console.error('Save product error:', error);
+  setNotice('لم يُحفظ المنتج: ' + error.message);
+  return;
+}
+
+const p = {
+  id: savedProduct.id,
+  name: savedProduct.name,
+  category: savedProduct.category || 'أخرى',
+  price: Number(savedProduct.price),
+  stock: Number(savedProduct.stock || 0),
+  image: savedProduct.image_url || '',
+  description: savedProduct.description || '',
+  vendor: newProduct.vendor,
+  phone: newProduct.phone
+};
+
+setProducts(old => [p, ...old]); setNewProduct({ name: '', category: 'إكسسوارات', price: '', stock: '1', vendor: '', phone: '', image: '', description: '' });
+setNotice('تم حفظ المنتج بنجاح.');
+setTab('products');
   };
   const placeOrder = e => {
     e.preventDefault();
