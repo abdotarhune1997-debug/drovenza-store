@@ -84,6 +84,7 @@ useEffect(() => {
 
         return {
           id: p.id,
+sellerId: p.seller_id,
           name: p.name,
           category: p.category || 'أخرى',
           price: Number(p.price || 0),
