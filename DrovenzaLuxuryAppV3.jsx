@@ -200,6 +200,28 @@ setEditingProductId(null);
   setNotice('تم حفظ المنتج بنجاح.');
   setTab('products');
 };
+   
+  const deleteProduct = async product => {
+    if (!session?.user?.id) {
+      setNotice('يرجى تسجيل الدخول أولاً.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', product.id)
+      .eq('seller_id', session.user.id);
+
+    if (error) {
+      setNotice('تعذر حذف المنتج: ' + error.message);
+      return;
+    }
+
+    setProducts(old => old.filter(p => p.id !== product.id));
+    setNotice('تم حذف المنتج بنجاح.');
+  }; 
+  
   const placeOrder = e => {
     e.preventDefault();
     if (!cartItems.length) { setNotice('أضف منتجًا إلى السلة أولًا.'); return; }
@@ -260,7 +282,15 @@ setEditingProductId(null);
   });
   setTab('merchant');
 }}>تعديل المنتج</button>
-
+<button
+  onClick={() => {
+    if (window.confirm('هل تريد حذف هذا المنتج؟')) {
+      deleteProduct(p);
+    }
+  }}
+>
+  حذف المنتج
+</button>
           </article>
         ))
       }
