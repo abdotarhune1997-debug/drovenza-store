@@ -22,8 +22,23 @@ export default function DrovenzaLuxuryAppV3() {
   const [checkout, setCheckout] = useState({ name: '', phone: '', city: 'طرابلس', address: '', notes: '' });
   const [newProduct, setNewProduct] = useState({ name: '', category: 'إكسسوارات', price: '', stock: '1', vendor: '', phone: '', image: '', description: '' });
   const [orderFilter, setOrderFilter] = useState('الكل');
-
+const [session, setSession] = useState(null);
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
   useEffect(() => { localStorage.setItem('drovenza_products_v1', JSON.stringify(products)); }, [products]);
+useEffect(() => {
+  supabase.auth.getSession().then(({ data }) => {
+    setSession(data.session);
+  });
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (_event, newSession) => {
+      setSession(newSession);
+    }
+  );
+
+  return () => listener.subscription.unsubscribe();
+}, []);
   useEffect(() => { localStorage.setItem('drovenza_orders_v1', JSON.stringify(orders)); }, [orders]);
   useEffect(() => {
     let active = true;
@@ -58,17 +73,23 @@ export default function DrovenzaLuxuryAppV3() {
   const cartItems = products.filter(p => cart[p.id] > 0).map(p => ({ ...p, qty: cart[p.id] }));
   const total = cartItems.reduce((sum, p) => sum + p.price * p.qty, 0);
   const setQty = (id, qty) => setCart(old => { const next = { ...old }; if (qty <= 0) delete next[id]; else next[id] = qty; return next; });
-  const addProduct = async e => {
-    e.preventDefault();
-    if (!newProduct.name.trim() || !newProduct.vendor.trim() || Number(newProduct.price) <= 0) { setNotice('أدخل اسم المنتج واسم المتجر وسعرًا صحيحًا.'); return; }
-    const { data: savedProduct, error } = await supabase
-  .from('products')
-  .insert([{
-    name: newProduct.name.trim(),
-    category: newProduct.category,
-    price: Number(newProduct.price),
-    stock: Math.max(0, Number(newProduct.stock) || 0),
-    image_url: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+const handleLogin = async e => {
+  e.preventDefault();
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    setNotice('تعذر تسجيل الدخول: ' + error.message);
+    return;
+  }
+
+  setPassword('');
+  setNotice('تم تسجيل الدخول بنجاح.');
+};
+() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
     description: newProduct.description.trim()
   }])
   .select('id, name, description, price, image_url, category, stock')
@@ -128,7 +149,7 @@ setTab('products');
 
     {tab === 'cart' && <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}><h2>سلة المشتريات</h2>{!cartItems.length ? <p>السلة فارغة حاليًا. انتقل إلى المنتجات لإضافة ما تريد.</p> : <><div style={{ display: 'grid', gap: 12 }}>{cartItems.map(p=><div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderBottom: '1px solid #eee', paddingBottom: 10 }}><div style={{ flex: 1 }}><strong>{p.name}</strong><div>{money(p.price)} · {p.vendor}</div></div><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><button aria-label="زيادة الكمية" onClick={()=>setQty(p.id,Math.min(p.stock, p.qty+1))} style={btn('#eee')}><Plus size={15} color="#333"/></button><span>{p.qty}</span><button aria-label="تقليل الكمية" onClick={()=>setQty(p.id,p.qty-1)} style={btn('#eee')}><Minus size={15} color="#333"/></button><button aria-label="حذف المنتج" onClick={()=>setQty(p.id,0)} style={btn('#fff0f0')}><Trash2 size={15} color="#b00"/></button></div></div>)}</div><h3>الإجمالي: {money(total)}</h3><p style={{ color: '#666', fontSize: 13 }}>تكلفة التوصيل غير محسوبة؛ يتفق الزبون مع كل تاجر عليها.</p><form onSubmit={placeOrder} style={{ display: 'grid', gap: 10, maxWidth: 650 }}><h3>بيانات الزبون</h3><input required placeholder="الاسم الكامل" value={checkout.name} onChange={e=>setCheckout({...checkout,name:e.target.value})} style={inputStyle}/><input required placeholder="رقم الهاتف" inputMode="tel" value={checkout.phone} onChange={e=>setCheckout({...checkout,phone:e.target.value})} style={inputStyle}/><input required placeholder="المدينة" value={checkout.city} onChange={e=>setCheckout({...checkout,city:e.target.value})} style={inputStyle}/><input required placeholder="العنوان بالتفصيل" value={checkout.address} onChange={e=>setCheckout({...checkout,address:e.target.value})} style={inputStyle}/><textarea placeholder="ملاحظات (اختياري)" value={checkout.notes} onChange={e=>setCheckout({...checkout,notes:e.target.value})} style={inputStyle}/><button type="submit" style={btn()}>تأكيد الطلب</button></form></>}</section>}
 
-    {tab === 'merchant' && <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 750 }}><h2><Store size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>إضافة منتج للتاجر</h2><p style={{ color: '#666' }}>أدخل بيانات المنتج لعرضه في هذه النسخة التجريبية. المنتجات لا تُنشر للعامة ولا تُشارك بين الأجهزة حتى نربط قاعدة بيانات وخدمة تسجيل دخول.</p><form onSubmit={addProduct} style={{ display: 'grid', gap: 11 }}><label>اسم المنتج<input required value={newProduct.name} onChange={e=>setNewProduct({...newProduct,name:e.target.value})} style={inputStyle}/></label><label>اسم المتجر / التاجر<input required value={newProduct.vendor} onChange={e=>setNewProduct({...newProduct,vendor:e.target.value})} style={inputStyle}/></label><label>رقم واتساب للتاجر مع مفتاح الدولة<input inputMode="tel" placeholder="مثال: 2189XXXXXXXX" value={newProduct.phone} onChange={e=>setNewProduct({...newProduct,phone:e.target.value})} style={inputStyle}/></label><label>التصنيف<select value={newProduct.category} onChange={e=>setNewProduct({...newProduct,category:e.target.value})} style={inputStyle}>{['إكسسوارات','هدايا','ملابس','عناية بالبشرة','إلكترونيات','منزل','أخرى'].map(c=><option key={c}>{c}</option>)}</select></label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label>السعر بالدينار<input required type="number" min="0.01" step="0.01" value={newProduct.price} onChange={e=>setNewProduct({...newProduct,price:e.target.value})} style={inputStyle}/></label><label>الكمية المتوفرة<input type="number" min="0" step="1" value={newProduct.stock} onChange={e=>setNewProduct({...newProduct,stock:e.target.value})} style={inputStyle}/></label></div><label>رابط صورة المنتج (اختياري)<input type="url" value={newProduct.image} onChange={e=>setNewProduct({...newProduct,image:e.target.value})} style={inputStyle}/></label><label>وصف المنتج<textarea value={newProduct.description} onChange={e=>setNewProduct({...newProduct,description:e.target.value})} style={inputStyle}/></label><button type="submit" style={btn()}>إضافة المنتج</button></form></section>}
+    {tab === 'merchant' && (session ? <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 750 }}><h2><Store size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>إضافة منتج للتاجر</h2><p style={{ color: '#666' }}>أدخل بيانات المنتج لعرضه في هذه النسخة التجريبية. المنتجات لا تُنشر للعامة ولا تُشارك بين الأجهزة حتى نربط قاعدة بيانات وخدمة تسجيل دخول.</p><form onSubmit={addProduct} style={{ display: 'grid', gap: 11 }}><label>اسم المنتج<input required value={newProduct.name} onChange={e=>setNewProduct({...newProduct,name:e.target.value})} style={inputStyle}/></label><label>اسم المتجر / التاجر<input required value={newProduct.vendor} onChange={e=>setNewProduct({...newProduct,vendor:e.target.value})} style={inputStyle}/></label><label>رقم واتساب للتاجر مع مفتاح الدولة<input inputMode="tel" placeholder="مثال: 2189XXXXXXXX" value={newProduct.phone} onChange={e=>setNewProduct({...newProduct,phone:e.target.value})} style={inputStyle}/></label><label>التصنيف<select value={newProduct.category} onChange={e=>setNewProduct({...newProduct,category:e.target.value})} style={inputStyle}>{['إكسسوارات','هدايا','ملابس','عناية بالبشرة','إلكترونيات','منزل','أخرى'].map(c=><option key={c}>{c}</option>)}</select></label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label>السعر بالدينار<input required type="number" min="0.01" step="0.01" value={newProduct.price} onChange={e=>setNewProduct({...newProduct,price:e.target.value})} style={inputStyle}/></label><label>الكمية المتوفرة<input type="number" min="0" step="1" value={newProduct.stock} onChange={e=>setNewProduct({...newProduct,stock:e.target.value})} style={inputStyle}/></label></div><label>رابط صورة المنتج (اختياري)<input type="url" value={newProduct.image} onChange={e=>setNewProduct({...newProduct,image:e.target.value})} style={inputStyle}/></label><label>وصف المنتج<textarea value={newProduct.description} onChange={e=>setNewProduct({...newProduct,description:e.target.value})} style={inputStyle}/></label><button type="submit" style={btn()}>إضافة المنتج</button></form></section> : <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 450 }}><h2>تسجيل دخول التاجر</h2><form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}><label>البريد الإلكتروني<input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label><label>كلمة المرور<input type="password" required value={password} onChange={e => setPassword(e.target.value)} style={inputStyle}/></label><button type="submit" style={btn()}>تسجيل الدخول</button></form></section>)}
 
     {tab === 'orders' && <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}><h2><ClipboardList size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>الطلبات</h2><p style={{ color: '#666', fontSize: 13 }}>هذه الطلبات محفوظة محليًا في المتصفح الحالي لأغراض التجربة فقط.</p><select value={orderFilter} onChange={e=>setOrderFilter(e.target.value)} style={{ ...inputStyle, maxWidth: 240, marginBottom: 14 }}>{['الكل','جديد','قيد التجهيز','خرج للتوصيل','مكتمل','ملغى'].map(s=><option key={s}>{s}</option>)}</select>{orders.filter(o=>orderFilter==='الكل'||o.status===orderFilter).length===0 ? <p>لا توجد طلبات هنا حتى الآن.</p> : <div style={{ display: 'grid', gap: 14 }}>{orders.filter(o=>orderFilter==='الكل'||o.status===orderFilter).map(o=><article key={o.id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 14 }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}><h3 style={{ margin: 0 }}>طلب {o.id}</h3><strong>{money(o.total)}</strong></div><p>الزبون: {o.customer.name} · الهاتف: {o.customer.phone}</p><p>العنوان: {o.customer.city}، {o.customer.address}</p><ul>{o.items.map((i,index)=><li key={`${i.id}-${index}`}>{i.name} × {i.qty} — {money(i.price*i.qty)} · {i.vendor}</li>)}</ul><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><label>حالة الطلب <select value={o.status} onChange={e=>updateStatus(o.id,e.target.value)} style={{ ...inputStyle, width: 'auto', marginRight: 6 }}>{['جديد','قيد التجهيز','خرج للتوصيل','مكتمل','ملغى'].map(s=><option key={s}>{s}</option>)}</select></label><button onClick={()=>whatsappOrder(o)} style={btn('#168a48')}><MessageCircle size={16} style={{ verticalAlign: 'middle', marginLeft: 6 }}/>التواصل عبر واتساب</button><button onClick={()=>{navigator.clipboard?.writeText(o.id);setNotice(`رقم الطلب: ${o.id}`);}} style={btn('#555')}>نسخ رقم الطلب</button></div></article>)}</div>}</section>}
     <footer style={{ marginTop: 24, padding: 14, borderTop: '1px solid #eadde4', color: '#666', fontSize: 12, lineHeight: 1.7 }}><Package size={15} style={{ verticalAlign: 'middle', marginLeft: 5 }}/> إصدار تجريبي أولي. لا تدخل بيانات حساسة. قبل الإطلاق الحقيقي يجب إضافة قاعدة بيانات مشتركة، تسجيل دخول وصلاحيات للتجار، تحقق من الطلبات، وسياسة خصوصية ونسخ احتياطي.</footer>
