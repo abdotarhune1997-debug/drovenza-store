@@ -45,7 +45,7 @@ useEffect(() => {
   useEffect(() => {
     let active = true;
 
-    const addProduct = async e => {
+   const loadProducts = async () => {
       const { data, error } = await supabase
         .from('products')
         .select('id, seller_id, name, description, price, image_url, category, stock');
