@@ -30,7 +30,7 @@ export default function DrovenzaLuxuryAppV3() {
     const loadProducts = async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, description, price, image_url, category');
+        .select('id, name, description, price, image_url, category, stock');
       if (error) {
         console.error('Supabase products error:', error);
         return;
@@ -43,7 +43,7 @@ export default function DrovenzaLuxuryAppV3() {
           price: Number(p.price || 0),
           vendor: 'متجر',
           phone: '',
-          stock: 1,
+          stock: Number(p.stock || 0),
           image: p.image_url || '',
           description: p.description || ''
         })));
@@ -58,7 +58,7 @@ export default function DrovenzaLuxuryAppV3() {
   const cartItems = products.filter(p => cart[p.id] > 0).map(p => ({ ...p, qty: cart[p.id] }));
   const total = cartItems.reduce((sum, p) => sum + p.price * p.qty, 0);
   const setQty = (id, qty) => setCart(old => { const next = { ...old }; if (qty <= 0) delete next[id]; else next[id] = qty; return next; });
-  const addProduct = e => {
+  const addProduct = async e => {
     e.preventDefault();
     if (!newProduct.name.trim() || !newProduct.vendor.trim() || Number(newProduct.price) <= 0) { setNotice('أدخل اسم المنتج واسم المتجر وسعرًا صحيحًا.'); return; }
     const p = { ...newProduct, id: `p${Date.now()}`, price: Number(newProduct.price), stock: Math.max(0, Number(newProduct.stock) || 0), image: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80' };
