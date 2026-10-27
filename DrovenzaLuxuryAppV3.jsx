@@ -135,19 +135,31 @@ const addProduct = async e => {
     return;
   }
 
-  const { data: savedProduct, error } = await supabase
-    .from('products')
-    .insert([{
-seller_id: session.user.id,
-      name: newProduct.name.trim(),
-      category: newProduct.category,
-      price: Number(newProduct.price),
-      stock: Number(newProduct.stock || 0),
-      image_url: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-      description: newProduct.description.trim()
-    }])
-    .select('id, name, description, price, image_url, category, stock')
-    .single();
+  
+const productData = {
+  seller_id: session.user.id,
+  name: newProduct.name.trim(),
+  category: newProduct.category,
+  price: Number(newProduct.price),
+  stock: Number(newProduct.stock || 0),
+  image_url: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+  description: newProduct.description.trim()
+};
+
+const { data: savedProduct, error } = editingProductId
+  ? await supabase
+      .from('products')
+      .update(productData)
+      .eq('id', editingProductId)
+      .eq('seller_id', session.user.id)
+      .select('id, name, description, price, image_url, category, stock')
+      .single()
+  : await supabase
+      .from('products')
+      .insert([productData])
+      .select('id, name, description, price, image_url, category, stock')
+      .single();
+
 
   if (error) {
     console.error('Save product error:', error);
@@ -168,7 +180,12 @@ seller_id: session.user.id,
     phone: newProduct.phone
   };
 
-  setProducts(old => [p, ...old]);
+  
+setProducts(old => editingProductId
+  ? old.map(item => item.id === editingProductId ? p : item)
+  : [p, ...old]
+);
+
   setNewProduct({
     name: '',
     category: 'إكسسوارات',
@@ -179,6 +196,7 @@ seller_id: session.user.id,
     image: '',
     description: ''
   });
+setEditingProductId(null);
   setNotice('تم حفظ المنتج بنجاح.');
   setTab('products');
 };
