@@ -89,34 +89,59 @@ const handleLogin = async e => {
   setPassword('');
   setNotice('تم تسجيل الدخول بنجاح.');
 };
-() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-    description: newProduct.description.trim()
-  }])
-  .select('id, name, description, price, image_url, category, stock')
-  .single();
+const addProduct = async e => {
+  e.preventDefault();
 
-if (error) {
-  console.error('Save product error:', error);
-  setNotice('لم يُحفظ المنتج: ' + error.message);
-  return;
-}
+  if (!session) {
+    setNotice('يرجى تسجيل الدخول أولاً.');
+    return;
+  }
 
-const p = {
-  id: savedProduct.id,
-  name: savedProduct.name,
-  category: savedProduct.category || 'أخرى',
-  price: Number(savedProduct.price),
-  stock: Number(savedProduct.stock || 0),
-  image: savedProduct.image_url || '',
-  description: savedProduct.description || '',
-  vendor: newProduct.vendor,
-  phone: newProduct.phone
-};
+  const { data: savedProduct, error } = await supabase
+    .from('products')
+    .insert([{
+      name: newProduct.name.trim(),
+      category: newProduct.category,
+      price: Number(newProduct.price),
+      stock: Number(newProduct.stock || 0),
+      image_url: newProduct.image.trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+      description: newProduct.description.trim()
+    }])
+    .select('id, name, description, price, image_url, category, stock')
+    .single();
 
-setProducts(old => [p, ...old]); setNewProduct({ name: '', category: 'إكسسوارات', price: '', stock: '1', vendor: '', phone: '', image: '', description: '' });
-setNotice('تم حفظ المنتج بنجاح.');
-setTab('products');
+  if (error) {
+    console.error('Save product error:', error);
+    setNotice('لم يُحفظ المنتج: ' + error.message);
+    return;
+  }
+
+  const p = {
+    id: savedProduct.id,
+    name: savedProduct.name,
+    category: savedProduct.category || 'أخرى',
+    price: Number(savedProduct.price),
+    stock: Number(savedProduct.stock || 0),
+    image: savedProduct.image_url || '',
+    description: savedProduct.description || '',
+    vendor: newProduct.vendor,
+    phone: newProduct.phone
   };
+
+  setProducts(old => [p, ...old]);
+  setNewProduct({
+    name: '',
+    category: 'إكسسوارات',
+    price: '',
+    stock: '1',
+    vendor: '',
+    phone: '',
+    image: '',
+    description: ''
+  });
+  setNotice('تم حفظ المنتج بنجاح.');
+  setTab('products');
+};
   const placeOrder = e => {
     e.preventDefault();
     if (!cartItems.length) { setNotice('أضف منتجًا إلى السلة أولًا.'); return; }
