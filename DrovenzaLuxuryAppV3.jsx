@@ -367,6 +367,19 @@ const placeOrder = async e => {
     <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       {[['products','المنتجات',ShoppingBag],['cart','السلة',ShoppingBag],['merchant','إضافة منتج للتاجر',Store],['myproducts','منتجاتي',Package],['orders','الطلبات',ClipboardList]].map(([id,label,Icon]) => <button key={id} onClick={() => { setTab(id); setNotice(''); }} style={{ ...btn(tab === id ? '#9b0050' : '#fff'), color: tab === id ? '#fff' : '#6d1745', border: '1px solid #eadde4' }}><Icon size={16} style={{ verticalAlign: 'middle', marginLeft: 6 }}/>{label}{id === 'cart' && Object.values(cart).reduce((a,b)=>a+b,0) > 0 ? ` (${Object.values(cart).reduce((a,b)=>a+b,0)})` : ''}</button>)}
     </nav>
+
+<button
+  type="button"
+  onClick={() => {
+    setTab('merchant');
+    setShowSellerApplication(true);
+    setNotice('');
+  }}
+  style={{ ...btn(), marginBottom: 16 }}
+>
+  انضم كتاجر إلى Drovenza
+</button>
+
     {notice && <div role="status" style={{ background: '#fff1f7', border: '1px solid #f0bfd7', padding: 12, borderRadius: 10, marginBottom: 14 }}>{notice}<button aria-label="إغلاق" onClick={() => setNotice('')} style={{ float: 'left', border: 0, background: 'transparent' }}><X size={16}/></button></div>}
 
     {tab === 'products' && <section>
