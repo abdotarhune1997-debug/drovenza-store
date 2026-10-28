@@ -26,6 +26,58 @@ const [orderFilter, setOrderFilter] = useState('الكل');
 const [session, setSession] = useState(null);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
+const [showSellerApplication, setShowSellerApplication] = useState(false);
+const [sellerOwnerName, setSellerOwnerName] = useState('');
+const [sellerStoreName, setSellerStoreName] = useState('');
+const [sellerPhone, setSellerPhone] = useState('');
+const [sellerDescription, setSellerDescription] = useState('');
+const [sellerApplicationNotice, setSellerApplicationNotice] = useState('');
+const [sellerApplicationLoading, setSellerApplicationLoading] = useState(false);
+
+const submitSellerApplication = async e => {
+  e.preventDefault();
+
+  if (
+    !sellerOwnerName.trim() ||
+    !sellerStoreName.trim() ||
+    !sellerPhone.trim()
+  ) {
+    setSellerApplicationNotice('أكمل الاسم واسم المتجر ورقم الهاتف.');
+    return;
+  }
+
+  setSellerApplicationLoading(true);
+  setSellerApplicationNotice('جارٍ إرسال الطلب...');
+
+  try {
+    const { error } = await supabase
+      .from('seller_applications')
+      .insert({
+        owner_name: sellerOwnerName.trim(),
+        store_name: sellerStoreName.trim(),
+        phone: sellerPhone.trim(),
+        description: sellerDescription.trim() || null,
+        status: 'pending'
+      });
+
+    if (error) throw error;
+
+    setSellerApplicationNotice(
+      'تم إرسال طلبك بنجاح، وسيتم مراجعة طلبك قبل تفعيل المتجر.'
+    );
+
+    setSellerOwnerName('');
+    setSellerStoreName('');
+    setSellerPhone('');
+    setSellerDescription('');
+  } catch (error) {
+    console.error('Seller application error:', error);
+    setSellerApplicationNotice('تعذر إرسال الطلب. حاول مرة أخرى.');
+  } finally {
+    setSellerApplicationLoading(false);
+  }
+};
+
   useEffect(() => { localStorage.setItem('drovenza_products_v1', JSON.stringify(products)); }, [products]);
 useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
@@ -325,7 +377,78 @@ const placeOrder = async e => {
 
     {tab === 'cart' && <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}><h2>سلة المشتريات</h2>{!cartItems.length ? <p>السلة فارغة حاليًا. انتقل إلى المنتجات لإضافة ما تريد.</p> : <><div style={{ display: 'grid', gap: 12 }}>{cartItems.map(p=><div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderBottom: '1px solid #eee', paddingBottom: 10 }}><div style={{ flex: 1 }}><strong>{p.name}</strong><div>{money(p.price)} · {p.vendor}</div></div><div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><button aria-label="زيادة الكمية" onClick={()=>setQty(p.id,Math.min(p.stock, p.qty+1))} style={btn('#eee')}><Plus size={15} color="#333"/></button><span>{p.qty}</span><button aria-label="تقليل الكمية" onClick={()=>setQty(p.id,p.qty-1)} style={btn('#eee')}><Minus size={15} color="#333"/></button><button aria-label="حذف المنتج" onClick={()=>setQty(p.id,0)} style={btn('#fff0f0')}><Trash2 size={15} color="#b00"/></button></div></div>)}</div><h3>الإجمالي: {money(total)}</h3><p style={{ color: '#666', fontSize: 13 }}>تكلفة التوصيل غير محسوبة؛ يتفق الزبون مع كل تاجر عليها.</p><form onSubmit={placeOrder} style={{ display: 'grid', gap: 10, maxWidth: 650 }}><h3>بيانات الزبون</h3><input required placeholder="الاسم الكامل" value={checkout.name} onChange={e=>setCheckout({...checkout,name:e.target.value})} style={inputStyle}/><input required placeholder="رقم الهاتف" inputMode="tel" value={checkout.phone} onChange={e=>setCheckout({...checkout,phone:e.target.value})} style={inputStyle}/><input required placeholder="المدينة" value={checkout.city} onChange={e=>setCheckout({...checkout,city:e.target.value})} style={inputStyle}/><input required placeholder="العنوان بالتفصيل" value={checkout.address} onChange={e=>setCheckout({...checkout,address:e.target.value})} style={inputStyle}/><textarea placeholder="ملاحظات (اختياري)" value={checkout.notes} onChange={e=>setCheckout({...checkout,notes:e.target.value})} style={inputStyle}/><button type="submit" style={btn()}>تأكيد الطلب</button></form></>}</section>}
 
-    {tab === 'merchant' && (session ? <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 750 }}><h2><Store size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>إضافة منتج للتاجر</h2><p style={{ color: '#666' }}>أدخل بيانات المنتج لعرضه في هذه النسخة التجريبية. المنتجات لا تُنشر للعامة ولا تُشارك بين الأجهزة حتى نربط قاعدة بيانات وخدمة تسجيل دخول.</p><form onSubmit={addProduct} style={{ display: 'grid', gap: 11 }}><label>اسم المنتج<input required value={newProduct.name} onChange={e=>setNewProduct({...newProduct,name:e.target.value})} style={inputStyle}/></label><label>اسم المتجر / التاجر<input required value={newProduct.vendor} onChange={e=>setNewProduct({...newProduct,vendor:e.target.value})} style={inputStyle}/></label><label>رقم واتساب للتاجر مع مفتاح الدولة<input inputMode="tel" placeholder="مثال: 2189XXXXXXXX" value={newProduct.phone} onChange={e=>setNewProduct({...newProduct,phone:e.target.value})} style={inputStyle}/></label><label>التصنيف<select value={newProduct.category} onChange={e=>setNewProduct({...newProduct,category:e.target.value})} style={inputStyle}>{['إكسسوارات','هدايا','ملابس','عناية بالبشرة','إلكترونيات','منزل','أخرى'].map(c=><option key={c}>{c}</option>)}</select></label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label>السعر بالدينار<input required type="number" min="0.01" step="0.01" value={newProduct.price} onChange={e=>setNewProduct({...newProduct,price:e.target.value})} style={inputStyle}/></label><label>الكمية المتوفرة<input type="number" min="0" step="1" value={newProduct.stock} onChange={e=>setNewProduct({...newProduct,stock:e.target.value})} style={inputStyle}/></label></div><label>رابط صورة المنتج (اختياري)<input type="url" value={newProduct.image} onChange={e=>setNewProduct({...newProduct,image:e.target.value})} style={inputStyle}/></label><label>وصف المنتج<textarea value={newProduct.description} onChange={e=>setNewProduct({...newProduct,description:e.target.value})} style={inputStyle}/></label><button type="submit" style={btn()}>إضافة المنتج</button></form></section> : <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 450 }}><h2>تسجيل دخول التاجر</h2><form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}><label>البريد الإلكتروني<input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label><label>كلمة المرور<input type="password" required value={password} onChange={e => setPassword(e.target.value)} style={inputStyle}/></label><button type="submit" style={btn()}>تسجيل الدخول</button></form></section>)}
+    {tab === 'merchant' && (session ? <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 750 }}><h2><Store size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>إضافة منتج للتاجر</h2><p style={{ color: '#666' }}>أدخل بيانات المنتج لعرضه في هذه النسخة التجريبية. المنتجات لا تُنشر للعامة ولا تُشارك بين الأجهزة حتى نربط قاعدة بيانات وخدمة تسجيل دخول.</p><form onSubmit={addProduct} style={{ display: 'grid', gap: 11 }}><label>اسم المنتج<input required value={newProduct.name} onChange={e=>setNewProduct({...newProduct,name:e.target.value})} style={inputStyle}/></label><label>اسم المتجر / التاجر<input required value={newProduct.vendor} onChange={e=>setNewProduct({...newProduct,vendor:e.target.value})} style={inputStyle}/></label><label>رقم واتساب للتاجر مع مفتاح الدولة<input inputMode="tel" placeholder="مثال: 2189XXXXXXXX" value={newProduct.phone} onChange={e=>setNewProduct({...newProduct,phone:e.target.value})} style={inputStyle}/></label><label>التصنيف<select value={newProduct.category} onChange={e=>setNewProduct({...newProduct,category:e.target.value})} style={inputStyle}>{['إكسسوارات','هدايا','ملابس','عناية بالبشرة','إلكترونيات','منزل','أخرى'].map(c=><option key={c}>{c}</option>)}</select></label><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><label>السعر بالدينار<input required type="number" min="0.01" step="0.01" value={newProduct.price} onChange={e=>setNewProduct({...newProduct,price:e.target.value})} style={inputStyle}/></label><label>الكمية المتوفرة<input type="number" min="0" step="1" value={newProduct.stock} onChange={e=>setNewProduct({...newProduct,stock:e.target.value})} style={inputStyle}/></label></div><label>رابط صورة المنتج (اختياري)<input type="url" value={newProduct.image} onChange={e=>setNewProduct({...newProduct,image:e.target.value})} style={inputStyle}/></label><label>وصف المنتج<textarea value={newProduct.description} onChange={e=>setNewProduct({...newProduct,description:e.target.value})} style={inputStyle}/></label><button type="submit" style={btn()}>إضافة المنتج</button></form></section> : <section style={{ background: '#fff', borderRadius: 16, padding: 18, maxWidth: 450 }}><h2>تسجيل دخول التاجر</h2><form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}><label>البريد الإلكتروني<input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label><label>كلمة المرور<input type="password" required value={password} onChange={e => setPassword(e.target.value)} style={inputStyle}/></label><button type="submit" style={btn()}>تسجيل الدخول
+</button></form>
+<button
+  type="button"
+  style={btn()}
+  onClick={() => setShowSellerApplication(v => !v)}
+>
+  {showSellerApplication ? 'إغلاق نموذج التاجر' : 'انضم كتاجر إلى Drovenza'}
+</button>
+
+{showSellerApplication && (
+  <form
+    onSubmit={submitSellerApplication}
+    style={{ display: 'grid', gap: 12, marginTop: 16 }}
+  >
+    <h3>طلب الانضمام كتاجر</h3>
+
+    <label>
+      اسم صاحب المتجر
+      <input
+        required
+        value={sellerOwnerName}
+        onChange={e => setSellerOwnerName(e.target.value)}
+        style={inputStyle}
+      />
+    </label>
+
+    <label>
+      اسم المتجر
+      <input
+        required
+        value={sellerStoreName}
+        onChange={e => setSellerStoreName(e.target.value)}
+        style={inputStyle}
+      />
+    </label>
+
+    <label>
+      رقم هاتف التاجر
+      <input
+        required
+        type="tel"
+        value={sellerPhone}
+        onChange={e => setSellerPhone(e.target.value)}
+        style={inputStyle}
+      />
+    </label>
+
+    <label>
+      وصف المتجر والمنتجات
+      <textarea
+        value={sellerDescription}
+        onChange={e => setSellerDescription(e.target.value)}
+        style={inputStyle}
+      />
+    </label>
+
+    {sellerApplicationNotice && (
+      <p>{sellerApplicationNotice}</p>
+    )}
+
+    <button
+      type="submit"
+      disabled={sellerApplicationLoading}
+      style={btn()}
+    >
+      {sellerApplicationLoading ? 'جارٍ الإرسال...' : 'إرسال طلب الانضمام'}
+    </button>
+  </form>
+)}
+</section>)}
+
 
    
 {tab === 'myproducts' && <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}>
