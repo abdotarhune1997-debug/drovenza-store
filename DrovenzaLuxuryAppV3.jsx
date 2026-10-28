@@ -222,13 +222,84 @@ setEditingProductId(null);
     setNotice('تم حذف المنتج بنجاح.');
   }; 
   
-  const placeOrder = e => {
-    e.preventDefault();
-    if (!cartItems.length) { setNotice('أضف منتجًا إلى السلة أولًا.'); return; }
-    if (!checkout.name.trim() || !checkout.phone.trim() || !checkout.city.trim() || !checkout.address.trim()) { setNotice('أكمل الاسم ورقم الهاتف والمدينة والعنوان.'); return; }
-    const order = { id: `DR-${Date.now().toString().slice(-8)}`, createdAt: new Date().toISOString(), customer: { ...checkout }, items: cartItems.map(({ id, name, price, vendor, phone, qty }) => ({ id, name, price, vendor, phone, qty })), total, status: 'جديد' };
-    setOrders(old => [order, ...old]); setCart({}); setNotice(`تم تسجيل الطلب ${order.id} على هذا الجهاز. هذه نسخة تجريبية محلية وليست قاعدة بيانات مشتركة.`); setTab('orders');
-  };
+  
+const placeOrder = async e => {
+  e.preventDefault();
+
+  if (!cartItems.length) {
+    setNotice('أضف منتجًا إلى السلة أولًا.');
+    return;
+  }
+
+  if (
+    !checkout.name.trim() ||
+    !checkout.phone.trim() ||
+    !checkout.city.trim() ||
+    !checkout.address.trim()
+  ) {
+    setNotice('أكمل الاسم ورقم الهاتف والمدينة والعنوان.');
+    return;
+  }
+
+  try {
+    setNotice('جارٍ تسجيل الطلب...');
+
+    const { data, error } = await supabase.rpc(
+      'place_drovenza_order',
+      {
+        p_customer_name: checkout.name.trim(),
+        p_customer_phone: checkout.phone.trim(),
+        p_customer_city: checkout.city.trim(),
+        p_customer_address: checkout.address.trim(),
+        p_items: cartItems.map(item => ({
+          id: item.id,
+          qty: item.qty
+        }))
+      }
+    );
+
+    if (error) {
+      console.error('Supabase order error:', error);
+      setNotice('تعذر تسجيل الطلب. حاول مرة أخرى.');
+      return;
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      setNotice('لم يصل تأكيد الطلب من قاعدة البيانات.');
+      return;
+    }
+
+    const newOrders = data.map(order => ({
+      id: order.order_number,
+      dbId: order.id,
+      createdAt: new Date().toISOString(),
+      customer: { ...checkout },
+      items: (order.items || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price),
+        vendor: item.vendor,
+        phone: item.phone || '',
+        qty: Number(item.qty)
+      })),
+      total: Number(order.total),
+      status: order.status || 'جديد'
+    }));
+
+    setOrders(old => [...newOrders, ...old]);
+    setCart({});
+    setNotice(
+      `تم تسجيل الطلب بنجاح. رقم الطلب: ${
+        newOrders.map(order => order.id).join('، ')
+      }`
+    );
+    setTab('orders');
+  } catch (err) {
+    console.error('Place order error:', err);
+    setNotice('حدث خطأ أثناء تسجيل الطلب. حاول مرة أخرى.');
+  }
+};
+
   const updateStatus = (id, status) => setOrders(old => old.map(o => o.id === id ? { ...o, status } : o));
   const whatsappOrder = order => {
     const phones = [...new Set(order.items.map(i => i.phone).filter(Boolean))];
