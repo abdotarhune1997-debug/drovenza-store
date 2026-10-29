@@ -574,7 +574,9 @@ const placeOrder = async e => {
       <label>اسم المتجر
         <input required value={sellerStoreName} onChange={e => setSellerStoreName(e.target.value)} />
       </label>
-     <label>رقم الهاتف
+   
+<label>
+  رقم الهاتف
   <input
     required
     type="tel"
@@ -584,7 +586,8 @@ const placeOrder = async e => {
   />
 </label>
 
-<label>البريد الإلكتروني
+<label>
+  البريد الإلكتروني
   <input
     required
     type="email"
@@ -593,10 +596,17 @@ const placeOrder = async e => {
     style={inputStyle}
   />
 </label>
-      <label>وصف المتجر (اختياري)
-        <textarea value={sellerDescription} onChange={e => setSellerDescription(e.target.value)} />
-      </label>
-      {sellerApplicationNotice && <p>{sellerApplicationNotice}</p>}
+
+<label style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+  وصف المتجر (اختياري)
+  <textarea
+    value={sellerDescription}
+    onChange={e => setSellerDescription(e.target.value)}
+    style={{ ...inputStyle, width: '100%', boxSizing: 'border-box', minHeight: 100 }}
+  />
+</label>
+
+     {sellerApplicationNotice && <p>{sellerApplicationNotice}</p>}
       <button type="submit" disabled={sellerApplicationLoading} style={btn()}>
         {sellerApplicationLoading ? 'جارٍ الإرسال...' : 'إرسال طلب الانضمام'}
       </button>
