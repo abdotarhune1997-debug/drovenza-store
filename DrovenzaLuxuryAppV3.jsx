@@ -73,6 +73,7 @@ const submitSellerApplication = async e => {
     setSellerStoreName('');
     setSellerPhone('');
     setSellerDescription('');
+    setSellerEmail('');
   } catch (error) {
     console.error('Seller application error:', error);
     setSellerApplicationNotice('تعذر إرسال الطلب. حاول مرة أخرى.');
