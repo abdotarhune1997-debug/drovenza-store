@@ -96,6 +96,37 @@ useEffect(() => {
 }, []);
   useEffect(() => { localStorage.setItem('drovenza_orders_v1', JSON.stringify(orders)); }, [orders]);
   
+useEffect(() => {
+  let active = true;
+
+  const checkAdmin = async () => {
+    if (!session?.user?.id) {
+      setIsDrovenzaAdmin(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('drovenza_admins')
+      .select('user_id')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (active) {
+      setIsDrovenzaAdmin(
+        !error &&
+        !!data &&
+        session.user.id === 'd2f596cd-f160-43a4-833e-1c598e2175d0'
+      );
+    }
+  };
+
+  checkAdmin();
+
+  return () => {
+    active = false;
+  };
+}, [session]);
+
   useEffect(() => {
     let active = true;
 
