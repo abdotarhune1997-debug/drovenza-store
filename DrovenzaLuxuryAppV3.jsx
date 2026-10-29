@@ -24,6 +24,7 @@ export default function DrovenzaLuxuryAppV3() {
 const [editingProductId, setEditingProductId] = useState(null);
 const [orderFilter, setOrderFilter] = useState('الكل');
 const [session, setSession] = useState(null);
+const [sellerApplications, setSellerApplications] = useState([]);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 const [showSellerApplication, setShowSellerApplication] = useState(false);
@@ -163,6 +164,18 @@ sellerId: p.seller_id,
   const cartItems = products.filter(p => cart[p.id] > 0).map(p => ({ ...p, qty: cart[p.id] }));
   const total = cartItems.reduce((sum, p) => sum + p.price * p.qty, 0);
   const setQty = (id, qty) => setCart(old => { const next = { ...old }; if (qty <= 0) delete next[id]; else next[id] = qty; return next; });
+const loadSellerApplications = async () => {
+  const { data, error } = await supabase.rpc('list_seller_applications');
+
+  if (error) {
+    console.error('Load seller applications error:', error);
+    setNotice('تعذر تحميل طلبات التجار. تأكد من تسجيل الدخول بحساب المدير.');
+    return;
+  }
+
+  setSellerApplications(data || []);
+};
+
 const handleLogin = async e => {
   e.preventDefault();
 
