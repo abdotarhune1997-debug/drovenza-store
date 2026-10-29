@@ -53,14 +53,15 @@ const submitSellerApplication = async e => {
   setSellerApplicationNotice('جارٍ إرسال الطلب...');
 
   try {
-    const { error } = await supabase
-      .from('seller_applications')
-      .insert({
-        owner_name: sellerOwnerName.trim(),
-        store_name: sellerStoreName.trim(),
-        phone: sellerPhone.trim(),
-        description: sellerDescription.trim() || null,
-        status: 'pending'
+  const { error } = await supabase
+    .from('seller_applications')
+    .insert({
+      owner_name: sellerOwnerName.trim(),
+      store_name: sellerStoreName.trim(),
+      phone: sellerPhone.trim(),
+      email: sellerEmail.trim().toLowerCase(),
+      description: sellerDescription.trim() || null,
+         status: 'pending'
       });
 
     if (error) throw error;
