@@ -33,6 +33,7 @@ const [sellerOwnerName, setSellerOwnerName] = useState('');
 const [sellerStoreName, setSellerStoreName] = useState('');
 const [sellerPhone, setSellerPhone] = useState('');
 const [sellerDescription, setSellerDescription] = useState('');
+const [sellerEmail, setSellerEmail] = useState('');
 const [sellerApplicationNotice, setSellerApplicationNotice] = useState('');
 const [sellerApplicationLoading, setSellerApplicationLoading] = useState(false);
 
