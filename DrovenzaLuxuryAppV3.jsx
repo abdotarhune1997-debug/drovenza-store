@@ -574,9 +574,25 @@ const placeOrder = async e => {
       <label>اسم المتجر
         <input required value={sellerStoreName} onChange={e => setSellerStoreName(e.target.value)} />
       </label>
-      <label>رقم الهاتف
-        <input required value={sellerPhone} onChange={e => setSellerPhone(e.target.value)} />
-      </label>
+     <label>رقم الهاتف
+  <input
+    required
+    type="tel"
+    value={sellerPhone}
+    onChange={e => setSellerPhone(e.target.value)}
+    style={inputStyle}
+  />
+</label>
+
+<label>البريد الإلكتروني
+  <input
+    required
+    type="email"
+    value={sellerEmail}
+    onChange={e => setSellerEmail(e.target.value)}
+    style={inputStyle}
+  />
+</label>
       <label>وصف المتجر (اختياري)
         <textarea value={sellerDescription} onChange={e => setSellerDescription(e.target.value)} />
       </label>
