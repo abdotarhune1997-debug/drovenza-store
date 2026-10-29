@@ -25,6 +25,7 @@ const [editingProductId, setEditingProductId] = useState(null);
 const [orderFilter, setOrderFilter] = useState('الكل');
 const [session, setSession] = useState(null);
 const [sellerApplications, setSellerApplications] = useState([]);
+const [isDrovenzaAdmin, setIsDrovenzaAdmin] = useState(false);
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 const [showSellerApplication, setShowSellerApplication] = useState(false);
@@ -164,6 +165,25 @@ sellerId: p.seller_id,
   const cartItems = products.filter(p => cart[p.id] > 0).map(p => ({ ...p, qty: cart[p.id] }));
   const total = cartItems.reduce((sum, p) => sum + p.price * p.qty, 0);
   const setQty = (id, qty) => setCart(old => { const next = { ...old }; if (qty <= 0) delete next[id]; else next[id] = qty; return next; });
+const reviewSellerApplication = async (applicationId, decision) => {
+  const { error } = await supabase.rpc('review_seller_application', {
+    p_application_id: applicationId,
+    p_decision: decision
+  });
+
+  if (error) {
+    console.error('Review seller application error:', error);
+    setNotice('تعذر تنفيذ القرار. تأكد من تسجيل الدخول بحساب المدير.');
+    return;
+  }
+
+  setNotice(decision === 'approved'
+    ? 'تم قبول طلب التاجر بنجاح.'
+    : 'تم رفض طلب التاجر.');
+
+  await loadSellerApplications();
+};
+
 const loadSellerApplications = async () => {
   const { data, error } = await supabase.rpc('list_seller_applications');
 
@@ -176,10 +196,11 @@ const loadSellerApplications = async () => {
   setSellerApplications(data || []);
 };
 
+
 const handleLogin = async e => {
   e.preventDefault();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
@@ -189,9 +210,17 @@ const handleLogin = async e => {
     return;
   }
 
+  const { data: adminData, error: adminError } = await supabase
+    .from('drovenza_admins')
+    .select('user_id')
+    .eq('user_id', data.user.id)
+    .maybeSingle();
+
+  setIsDrovenzaAdmin(!adminError && !!adminData && data.user.id === 'd2f596cd-f160-43a4-833e-1c598e2175d0');
   setPassword('');
   setNotice('تم تسجيل الدخول بنجاح.');
 };
+
 const addProduct = async e => {
   e.preventDefault();
 
@@ -393,7 +422,21 @@ const placeOrder = async e => {
   انضم كتاجر إلى Drovenza
 </button>
 
-    {notice && <div role="status" style={{ background: '#fff1f7', border: '1px solid #f0bfd7', padding: 12, borderRadius: 10, marginBottom: 14 }}>{notice}<button aria-label="إغلاق" onClick={() => setNotice('')} style={{ float: 'left', border: 0, background: 'transparent' }}><X size={16}/></button></div>}
+{isDrovenzaAdmin && (
+  <button
+    type="button"
+    onClick={() => {
+      setTab('sellerReviews');
+      setNotice('');
+      loadSellerApplications();
+    }}
+    style={{ ...btn(), marginBottom: 16, marginRight: 8 }}
+  >
+    مراجعة طلبات التجار
+  </button>
+)}
+
+ {notice && <div role="status" style={{ background: '#fff1f7', border: '1px solid #f0bfd7', padding: 12, borderRadius: 10, marginBottom: 14 }}>{notice}<button aria-label="إغلاق" onClick={() => setNotice('')} style={{ float: 'left', border: 0, background: 'transparent' }}><X size={16}/></button></div>}
 
     {tab === 'products' && <section>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}><div style={{ position: 'relative', flex: '1 1 220px' }}><Search size={18} style={{ position: 'absolute', right: 12, top: 13, color: '#888' }}/><input aria-label="ابحث عن منتج" value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحث عن منتج أو متجر..." style={{ ...inputStyle, paddingRight: 38 }}/></div><select aria-label="التصنيف" value={category} onChange={e=>setCategory(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150 }}>{categories.map(c=><option key={c}>{c}</option>)}</select></div>
@@ -498,7 +541,41 @@ const placeOrder = async e => {
       </button>
     </form>
   </section>
-)}  
+)}
+
+{tab === 'sellerReviews' && (
+  <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}>
+    <h2>مراجعة طلبات التجار</h2>
+
+    <button type="button" onClick={loadSellerApplications} style={btn()}>
+      تحميل الطلبات
+    </button>
+
+    {sellerApplications.length === 0 ? (
+      <p>لا توجد طلبات معروضة. اضغط تحميل الطلبات.</p>
+    ) : sellerApplications.map(app => (
+      <article key={app.application_id} style={{ border: '1px solid #eee', borderRadius: 12, padding: 12, marginTop: 12 }}>
+        <h3>{app.store_name}</h3>
+        <p>صاحب المتجر: {app.owner_name}</p>
+        <p>الهاتف: {app.phone}</p>
+        <p>الوصف: {app.description || 'لا يوجد'}</p>
+        <p>الحالة: {app.status}</p>
+
+        {app.status === 'pending' && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => reviewSellerApplication(app.application_id, 'approved')} style={btn()}>
+              قبول
+            </button>
+            <button type="button" onClick={() => reviewSellerApplication(app.application_id, 'rejected')} style={btn()}>
+              رفض
+            </button>
+          </div>
+        )}
+      </article>
+    ))}
+  </section>
+)}
+  
 {tab === 'myproducts' && <section style={{ background: '#fff', borderRadius: 16, padding: 18 }}>
   <h2><Package size={22} style={{ verticalAlign: 'middle', marginLeft: 8 }}/>منتجاتي</h2>
   {!session ? <p>سجّل الدخول بحساب التاجر لعرض منتجاتك.</p> : (
