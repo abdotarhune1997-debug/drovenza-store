@@ -520,22 +520,33 @@ const placeOrder = async e => {
     <label>
       رقم هاتف التاجر
       <input
-        required
-        type="tel"
-        value={sellerPhone}
-        onChange={e => setSellerPhone(e.target.value)}
-        style={inputStyle}
-      />
-    </label>
+  required
+  type="tel"
+  value={sellerPhone}
+  onChange={e => setSellerPhone(e.target.value)}
+  style={inputStyle}
+/>
+</label>
 
-    <label>
-      وصف المتجر والمنتجات
-      <textarea
-        value={sellerDescription}
-        onChange={e => setSellerDescription(e.target.value)}
-        style={inputStyle}
-      />
-    </label>
+<label>
+  البريد الإلكتروني
+  <input
+    required
+    type="email"
+    value={sellerEmail}
+    onChange={e => setSellerEmail(e.target.value)}
+    style={inputStyle}
+  />
+</label>
+
+<label>
+  وصف المتجر والمنتجات
+  <textarea
+    value={sellerDescription}
+    onChange={e => setSellerDescription(e.target.value)}
+    style={inputStyle}
+  />
+</label>
 
     {sellerApplicationNotice && (
       <p>{sellerApplicationNotice}</p>
